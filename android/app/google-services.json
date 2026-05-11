@@ -1,0 +1,86 @@
+{
+  "project_info": {
+    "project_number": "919632471361",
+    "project_id": "rbcimage-aed61",
+    "storage_bucket": "rbcimage-aed61.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919632471361:android:8d3f7e798e2f047573edc0",
+        "android_client_info": {
+          "package_name": "com.rbc15.rbc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "919632471361-9drc851aan3jpbit5rkrq8t2ecmtsev5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rbc15.rbc",
+            "certificate_hash": "ad2bfc01d83349758d1831f75871ff2a8ba37292"
+          }
+        },
+        {
+          "client_id": "919632471361-bte6gog2gfjn39nqjee5dpaqnni6shmu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rbc15.rbc",
+            "certificate_hash": "593d084e55403104bc4515b39087a46b3068f22d"
+          }
+        },
+        {
+          "client_id": "919632471361-onv1vmuhqj8a8gh6h0j9k5h9cr0b659h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rbc15.rbc",
+            "certificate_hash": "51cabd10cc480c09144cbeb03c33911e3f374dd7"
+          }
+        },
+        {
+          "client_id": "919632471361-pcpo3g77t0tqlfpafbh03fug73hiu7e4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rbc15.rbc",
+            "certificate_hash": "779d7fad3d6842592496cdea4c3479a768f8d7d6"
+          }
+        },
+        {
+          "client_id": "919632471361-rhjdvngase803ffse0c80fqes4201g9g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rbc15.rbc",
+            "certificate_hash": "640390f315fc04f0bd293942b47248557f07fb6b"
+          }
+        },
+        {
+          "client_id": "919632471361-smrg1n1doaomgnfegj8nij0qnirml5si.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBa8tGujwiswlUdF4eg2YBSWfAr5yFVctI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "919632471361-smrg1n1doaomgnfegj8nij0qnirml5si.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "919632471361-jbjdas637qdugij7phj18e14b7n9sdnh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rbc"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

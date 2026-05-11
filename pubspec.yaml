@@ -1,0 +1,52 @@
+name: rbc_flutter_professional
+description: Professional Flutter rebuild of the RBC community app.
+publish_to: 'none'
+version: 2.0.0+2
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  google_sign_in: ^6.2.1
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+  intl: ^0.19.0
+  jwt_decoder: ^2.0.1
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.2
+  geolocator: ^13.0.2
+  webview_flutter: ^4.10.0
+  add_2_calendar: ^3.0.1
+  device_calendar: ^4.3.3
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/ad/
+    - assets/images/background/
+    - assets/images/debiIcon/
+    - assets/images/members/
+    - assets/sound/
+  fonts:
+    - family: SolaimanLipi
+      fonts:
+        - asset: assets/fonts/SolaimanLipi_20-04-07.ttf
+    - family: Prothoma
+      fonts:
+        - asset: assets/fonts/PROTHOMA.TTF
