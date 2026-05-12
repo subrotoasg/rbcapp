@@ -1,10 +1,10 @@
 name: rbc_flutter_professional
 description: Professional Flutter rebuild of the RBC community app.
-publish_to: 'none'
+publish_to: "none"
 version: 2.0.0+2
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -33,6 +33,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -50,3 +51,11 @@ flutter:
     - family: Prothoma
       fonts:
         - asset: assets/fonts/PROTHOMA.TTF
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/foreground.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/icon.png"
+  min_sdk_android: 23

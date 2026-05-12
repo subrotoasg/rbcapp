@@ -120,7 +120,7 @@ class _MonthCadaScreenState extends State<MonthCadaScreen> {
     }
 
     if (user.isPrivileged != true) {
-      return const PujaPronamiScreen(embed: true);
+      return const PujaPronamiScreen();
     }
 
         return Scaffold(
