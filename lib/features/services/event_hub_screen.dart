@@ -66,8 +66,8 @@ class _EventHubScreenState extends State<EventHubScreen> {
   }
 
   Future<List<_CalendarEventItem>> _loadEvents() async {
+    // 1. Load Backend Events
     final backendRaw = await FestivalApi(ApiClient.instance).events();
-
     final backendEvents = backendRaw
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
@@ -78,10 +78,10 @@ class _EventHubScreenState extends State<EventHubScreen> {
           if (date == null) return null;
 
           return _CalendarEventItem(
-            title: '${item['subtitle'] ?? item['title'] ?? 'RBC ইভেন্ট'}',
-            description: '${item['description'] ?? item['details'] ?? ''}',
+            title: '${item['title'] ?? item['title'] ?? 'RBC ইভেন্ট'}',
+            description: '${item['subtitle'] ?? item['subtitle'] ?? ''}',
             date: date,
-            source: 'Backend',
+            source: 'RBC',
             addedToCalendar: false,
           );
         })
@@ -89,6 +89,11 @@ class _EventHubScreenState extends State<EventHubScreen> {
         .where((event) => !_onlyDate(event.date).isBefore(todayStart))
         .toList();
 
+
+    // 2. Load Native Device Calendar Events (Read Operation Fix)
+    final deviceEvents = await _loadDeviceCalendarEvents();
+
+    // 3. Combine All
     final localUpcoming = localAddedEvents
         .where((event) => !_onlyDate(event.date).isBefore(todayStart))
         .toList();
@@ -96,18 +101,72 @@ class _EventHubScreenState extends State<EventHubScreen> {
     final allEvents = [
       ...localUpcoming,
       ...backendEvents,
+      ...deviceEvents,
     ];
 
-    allEvents.sort((a, b) => a.date.compareTo(b.date));
+    // Remove duplicates based on title and date to prevent clutter
+    final uniqueEvents = <String, _CalendarEventItem>{};
+    for (var event in allEvents) {
+      final key = '${event.title}_${_onlyDate(event.date).toIso8601String()}';
+      if (!uniqueEvents.containsKey(key) || event.addedToCalendar) {
+        uniqueEvents[key] = event; // Prefer items marked as added to calendar
+      }
+    }
 
-    return allEvents;
+    final finalList = uniqueEvents.values.toList();
+    finalList.sort((a, b) => a.date.compareTo(b.date));
+
+    return finalList;
+  }
+
+  // Actual READ operation from the user's native calendar
+  Future<List<_CalendarEventItem>> _loadDeviceCalendarEvents() async {
+    try {
+      final hasPermission = await _ensureCalendarPermission();
+      if (!hasPermission) return [];
+
+      final result = await calendarPlugin.retrieveCalendars();
+      if (result.isSuccess == false || result.data == null) return [];
+
+      final writableCalendars = result.data!.where((c) => c.isReadOnly != true);
+      List<_CalendarEventItem> fetchedEvents = [];
+
+      final startDate = tz.TZDateTime.now(tz.local);
+      final endDate = tz.TZDateTime.now(tz.local).add(const Duration(days: 365));
+
+      for (final calendar in writableCalendars) {
+        if (calendar.id == null) continue;
+
+        final eventsResult = await calendarPlugin.retrieveEvents(
+          calendar.id!,
+          RetrieveEventsParams(startDate: startDate, endDate: endDate),
+        );
+
+        if (eventsResult.isSuccess == true && eventsResult.data != null) {
+          for (final e in eventsResult.data!) {
+            if (e.start != null) {
+              fetchedEvents.add(_CalendarEventItem(
+                title: e.title ?? 'Unknown Event',
+                description: e.description ?? '',
+                date: e.start!.toLocal(), // Convert TZDateTime back to normal DateTime
+                source: 'Device Calendar',
+                addedToCalendar: true,
+              ));
+            }
+          }
+        }
+      }
+      return fetchedEvents;
+    } catch (e) {
+      debugPrint('Read Calendar Error: $e');
+      return [];
+    }
   }
 
   Future<void> _refresh() async {
     setState(() {
       eventsFuture = _loadEvents();
     });
-
     await eventsFuture;
   }
 
@@ -131,7 +190,7 @@ class _EventHubScreenState extends State<EventHubScreen> {
     final picked = await showTimePicker(
       context: context,
       initialTime: selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
-      helpText: 'ইভেন্টের সময় নির্বাচন করুন',
+      helpText: 'ইভেন্টের সময় নির্বাচন করুন',
     );
 
     if (picked != null) {
@@ -140,88 +199,103 @@ class _EventHubScreenState extends State<EventHubScreen> {
   }
 
   Future<bool> _ensureCalendarPermission() async {
-    final hasPermission = await calendarPlugin.hasPermissions();
-
-    if (hasPermission.data == true) return true;
-
-    final requested = await calendarPlugin.requestPermissions();
-
-    return requested.data == true;
+    var permissionsGranted = await calendarPlugin.hasPermissions();
+    if (permissionsGranted.isSuccess && permissionsGranted.data!) {
+      return true;
+    }
+    permissionsGranted = await calendarPlugin.requestPermissions();
+    return permissionsGranted.isSuccess && permissionsGranted.data == true;
   }
 
   Future<String?> _writableCalendarId() async {
     final allowed = await _ensureCalendarPermission();
-
     if (!allowed) {
       _message('Calendar permission allow করুন');
       return null;
     }
 
     final result = await calendarPlugin.retrieveCalendars();
-    final calendars = result.data ?? [];
+    
+    if (result.isSuccess == false) {
+      _message('Calendar fetch error: ${result.errors.first.errorMessage}');
+      return null;
+    }
 
+    final calendars = result.data ?? [];
+    
+    // First try to find the default calendar
     for (final calendar in calendars) {
-      final id = calendar.id;
-      if (id != null && id.isNotEmpty && calendar.isReadOnly != true) {
-        return id;
+      if (calendar.isDefault == true && calendar.isReadOnly != true) {
+        return calendar.id;
       }
     }
 
-    if (calendars.isNotEmpty) {
-      return calendars.first.id;
+    // Fallback to any writable calendar
+    for (final calendar in calendars) {
+      if (calendar.isReadOnly != true && calendar.id != null) {
+        return calendar.id;
+      }
     }
 
     return null;
   }
 
   Future<void> _saveToDeviceCalendar(_CalendarEventItem item) async {
-    final calendarId = await _writableCalendarId();
+    try {
+      final calendarId = await _writableCalendarId();
 
-    if (calendarId == null || calendarId.isEmpty) {
-      _message('Writable calendar পাওয়া যায়নি');
-      return;
-    }
+      if (calendarId == null || calendarId.isEmpty) {
+        _message('Writable calendar পাওয়া যায়নি');
+        return;
+      }
 
-    final start = tz.TZDateTime.from(item.date, tz.local);
-    final end = tz.TZDateTime.from(
-      item.date.add(const Duration(hours: 1)),
-      tz.local,
-    );
-
-    final event = Event(
-      calendarId,
-      title: item.title,
-      description: item.description.isEmpty
-          ? 'রূপসী বাংলা ক্লাব ইভেন্ট'
-          : item.description,
-      start: start,
-      end: end,
-      reminders: [
-        Reminder(minutes: 24 * 60),
-      ],
-    );
-
-    final result = await calendarPlugin.createOrUpdateEvent(event);
-
-    if (result?.isSuccess == true) {
-      await RbcNotificationService.scheduleEventReminder(
-        title: item.title,
-        eventDate: item.date,
-        note: item.description,
+      // Timezone dependency here! Will fail if tz.initializeTimeZones() isn't called in main.dart
+      final start = tz.TZDateTime.from(item.date, tz.local);
+      final end = tz.TZDateTime.from(
+        item.date.add(const Duration(hours: 1)),
+        tz.local,
       );
 
-      _message('Calendar-এ যুক্ত হয়েছে এবং reminder set হয়েছে');
+      final event = Event(
+        calendarId,
+        title: item.title,
+        description: item.description.isEmpty
+            ? 'রূপসী বাংলা ক্লাব ইভেন্ট'
+            : item.description,
+        start: start,
+        end: end,
+        reminders: [
+          Reminder(minutes: 24 * 60), // 1 day before
+          Reminder(minutes: 60),      // 1 hour before
+        ],
+      );
 
-      setState(() {
-        if (!localAddedEvents.contains(item)) {
-          localAddedEvents.add(
-            item.copyWith(addedToCalendar: true),
-          );
-        }
-        eventsFuture = _loadEvents();
-      });
-    } else {
-      _message('Calendar-এ event যুক্ত করা যায়নি');
+      final result = await calendarPlugin.createOrUpdateEvent(event);
+
+      if (result?.isSuccess == true && result?.data != null) {
+        await RbcNotificationService.scheduleEventReminder(
+          title: item.title,
+          eventDate: item.date,
+          note: item.description,
+        );
+
+        _message('Calendar-এ সফলভাবে যুক্ত হয়েছে!');
+
+        setState(() {
+          if (!localAddedEvents.contains(item)) {
+            localAddedEvents.add(item.copyWith(addedToCalendar: true));
+          }
+          eventsFuture = _loadEvents(); // Reload to show updated state
+        });
+      } else {
+        // Expose the EXACT native error message from iOS/Android
+        final errors = result?.errors.map((e) => e.errorMessage).join(', ') ?? 'Unknown error';
+        _message('Error saving event: $errors');
+      }
+    } catch (e) {
+      // Catch exceptions like uninitialized timezones
+      _message('System Error: $e');
+      debugPrint('Calendar Write Exception: $e');
     }
   }
 
@@ -274,8 +348,12 @@ class _EventHubScreenState extends State<EventHubScreen> {
   }
 
   void _message(String text) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
+      SnackBar(
+        content: Text(text),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -308,9 +386,7 @@ class _EventHubScreenState extends State<EventHubScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
                 _HeroCard(onOpenCalendar: _openGoogleCalendar),
-
                 const SizedBox(height: 18),
-
                 _AddEventForm(
                   titleController: titleController,
                   noteController: noteController,
@@ -320,16 +396,12 @@ class _EventHubScreenState extends State<EventHubScreen> {
                   onPickTime: _pickTime,
                   onSubmit: _addOwnEvent,
                 ),
-
                 const SizedBox(height: 22),
-
                 const SectionHeader(
                   title: 'আজ ও আসন্ন ইভেন্ট',
                   subtitle: '',
                 ),
-
                 const SizedBox(height: 12),
-
                 if (snapshot.hasError)
                   _ErrorEventView(onRetry: _refresh)
                 else if (items.isEmpty)
@@ -338,7 +410,9 @@ class _EventHubScreenState extends State<EventHubScreen> {
                   ...items.map(
                     (item) => _EventCard(
                       item: item,
-                      onAddToCalendar: () => _saveToDeviceCalendar(item),
+                      onAddToCalendar: () => item.addedToCalendar 
+                          ? _message('ইতিমধ্যে Calendar-এ আছে')
+                          : _saveToDeviceCalendar(item),
                     ),
                   ),
               ],
@@ -367,7 +441,6 @@ class _CalendarEventItem {
 
   bool get isToday {
     final now = DateTime.now();
-
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
@@ -410,23 +483,13 @@ class _HeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'আমরা আপনাকে স্মরণ করিয়ে দিব আপনার উৎসব',
+            'আমরা আপনাকে স্মরণ করিয়ে দিব আপনার উৎসব',
             style: TextStyle(
               color: RbcColors.surface.withOpacity(.82),
               height: 1.45,
               fontWeight: FontWeight.w600,
             ),
           ),
-          // const SizedBox(height: 16),
-          // FilledButton.icon(
-          //   style: FilledButton.styleFrom(
-          //     backgroundColor: RbcColors.accent,
-          //     foregroundColor: RbcColors.primary,
-          //   ),
-          //   onPressed: onOpenCalendar,
-          //   icon: const Icon(Icons.calendar_month_rounded),
-          //   label: const Text('Google Calendar খুলুন'),
-          // ),
         ],
       ),
     );
@@ -459,7 +522,7 @@ class _AddEventForm extends StatelessWidget {
         : DateFormat('dd MMMM yyyy').format(selectedDate!);
 
     final timeText = selectedTime == null
-        ? 'সময় নির্বাচন করুন'
+        ? 'সময় নির্বাচন করুন'
         : selectedTime!.format(context);
 
     return ProCard(
@@ -490,7 +553,7 @@ class _AddEventForm extends StatelessWidget {
             maxLines: 4,
             decoration: const InputDecoration(
               labelText: 'বিস্তারিত / নোট',
-              hintText: 'সময়, স্থান বা প্রয়োজনীয় তথ্য লিখুন',
+              hintText: 'সময়, স্থান বা প্রয়োজনীয় তথ্য লিখুন',
               prefixIcon: Icon(Icons.notes_rounded),
             ),
           ),
@@ -691,22 +754,12 @@ class _EmptyEventView extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Text(
-            'কোনো upcoming event পাওয়া যায়নি',
+            'কোনো upcoming event পাওয়া যায়নি',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: RbcColors.primary,
               fontWeight: FontWeight.w900,
               fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: RbcColors.primary.withOpacity(.62),
-              height: 1.4,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -734,7 +787,7 @@ class _ErrorEventView extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Text(
-            'কোন তথ্য লোড করা যায়নি',
+            'কোন তথ্য লোড করা যায়নি',
             style: TextStyle(
               color: RbcColors.primary,
               fontWeight: FontWeight.w900,

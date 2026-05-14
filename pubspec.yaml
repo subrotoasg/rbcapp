@@ -18,7 +18,7 @@ dependencies:
   firebase_messaging: ^15.1.5
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   jwt_decoder: ^2.0.1
   url_launcher: ^6.3.1
   share_plus: ^10.1.2
@@ -28,6 +28,7 @@ dependencies:
   device_calendar: ^4.3.3
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
+  cloud_firestore: ^5.6.12
 
 dev_dependencies:
   flutter_test:
@@ -55,7 +56,19 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/foreground.png"
+  image_path: "assets/images/icon.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/icon.png"
   min_sdk_android: 23
+
+flutter_native_splash:
+  color: "#578eeb"
+  image: assets/images/splash.png
+  android: true
+  ios: true
+  web: false
+
+  # Optional: Add branding mode for Android 12+
+  android_12:
+    image: assets/images/icon.png
+    color: "#578eeb"

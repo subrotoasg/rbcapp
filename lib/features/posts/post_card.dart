@@ -1,216 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-// import 'package:rbc_flutter_professional/core/services/api_client.dart';
-// import 'package:rbc_flutter_professional/core/theme/app_colors.dart';
-// import 'package:rbc_flutter_professional/core/utils/date_formatter.dart';
-// import 'package:rbc_flutter_professional/features/auth/auth_controller.dart';
-// import 'package:rbc_flutter_professional/features/posts/post_api.dart';
-// import 'package:rbc_flutter_professional/shared/widgets/app_network_image.dart';
-// import 'package:rbc_flutter_professional/shared/widgets/pro_card.dart';
-
-// class PostCard extends StatefulWidget {
-//   const PostCard({super.key, required this.post, this.canDelete = false, this.onChanged});
-//   final Map<String, dynamic> post;
-//   final bool canDelete;
-//   final VoidCallback? onChanged;
-
-//   @override
-//   State<PostCard> createState() => _PostCardState();
-// }
-
-// class _PostCardState extends State<PostCard> {
-//   bool expanded = false;
-//   bool showComment = false;
-//   final comment = TextEditingController();
-//   bool busy = false;
-
-//   @override
-//   void dispose() {
-//     comment.dispose();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final auth = context.watch<AuthController>();
-//     final user = auth.user;
-//     final comments = widget.post['comments'] is List ? widget.post['comments'] as List : [];
-//     final likes = widget.post['likes'] is List ? widget.post['likes'] as List : [];
-//     final liked = likes.contains(user?.email);
-//     final text = '${widget.post['post'] ?? ''}'.replaceAll(r'\n', '\n');
-
-//     return Padding(
-//       padding: const EdgeInsets.only(bottom: 14),
-//       child: ProCard(
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Row(
-//               children: [
-//                 AppNetworkAvatar(url: '${widget.post['creatorImage'] ?? ''}', size: 42),
-//                 const SizedBox(width: 12),
-//                 Expanded(
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         '${widget.post['creatorName'] ?? ''}',
-//                         style: const TextStyle(color: RbcColors.primary, fontWeight: FontWeight.w900),
-//                       ),
-//                       Text(
-//                         DateFormatter.bdt(widget.post['date']),
-//                         style: TextStyle(color: RbcColors.primary.withOpacity(.6), fontSize: 12),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//                 if (widget.canDelete)
-//                   IconButton(
-//                     onPressed: () => _delete(context),
-//                     icon: const Icon(Icons.delete_outline_rounded, color: RbcColors.primary),
-//                   ),
-//               ],
-//             ),
-//             const SizedBox(height: 12),
-//             Text(
-//               text,
-//               maxLines: expanded ? null : 3,
-//               overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-//               textAlign: TextAlign.justify,
-//               style: TextStyle(color: RbcColors.primary.withOpacity(.9), height: 1.45),
-//             ),
-//             if (text.length > 120)
-//               TextButton(
-//                 onPressed: () => setState(() => expanded = !expanded),
-//                 child: Text(expanded ? 'আবার কমিয়ে পড়ুন' : 'আরও পড়ুন'),
-//               ),
-//             if ('${widget.post['image'] ?? ''}'.isNotEmpty) ...[
-//               const SizedBox(height: 8),
-//               AppNetworkImage(url: '${widget.post['image']}', height: 220, width: double.infinity, radius: 20),
-//             ],
-//             const SizedBox(height: 12),
-//             Row(
-//               children: [
-//                 IconButton(
-//                   onPressed: () => _react(context),
-//                   icon: Icon(
-//                     liked ? Icons.thumb_up_alt_rounded : Icons.thumb_up_alt_outlined,
-//                     color: RbcColors.primary,
-//                   ),
-//                 ),
-//                 Text('${likes.length} লাইক', style: const TextStyle(color: RbcColors.primary)),
-//                 const Spacer(),
-//                 IconButton(
-//                   onPressed: () => setState(() => showComment = !showComment),
-//                   icon: const Icon(Icons.mode_comment_outlined, color: RbcColors.primary),
-//                 ),
-//                 Text('${comments.length} কমেন্ট', style: const TextStyle(color: RbcColors.primary)),
-//               ],
-//             ),
-//             if (showComment) ...[
-//               const SizedBox(height: 8),
-//               Row(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   AppNetworkAvatar(url: user?.photo ?? '', size: 34),
-//                   const SizedBox(width: 8),
-//                   Expanded(
-//                     child: TextField(
-//                       controller: comment,
-//                       minLines: 1,
-//                       maxLines: 3,
-//                       decoration: const InputDecoration(hintText: 'আপনার মন্তব্য লিখুন'),
-//                     ),
-//                   ),
-//                   IconButton.filled(
-//                     style: IconButton.styleFrom(backgroundColor: RbcColors.primary),
-//                     onPressed: busy ? null : () => _comment(context),
-//                     icon: const Icon(Icons.send_rounded, color: RbcColors.surface),
-//                   ),
-//                 ],
-//               ),
-//               const SizedBox(height: 10),
-//               for (final c in comments.take(5))
-//                 Padding(
-//                   padding: const EdgeInsets.only(bottom: 10),
-//                   child: Row(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       AppNetworkAvatar(url: '${c['photo'] ?? ''}', size: 30),
-//                       const SizedBox(width: 8),
-//                       Expanded(
-//                         child: Container(
-//                           padding: const EdgeInsets.all(10),
-//                           decoration: BoxDecoration(
-//                             color: RbcColors.primary.withOpacity(.06),
-//                             borderRadius: BorderRadius.circular(16),
-//                           ),
-//                           child: Column(
-//                             crossAxisAlignment: CrossAxisAlignment.start,
-//                             children: [
-//                               Text('${c['name'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w900)),
-//                               Text('${c['comments'] ?? ''}'.replaceAll(r'\n', '\n')),
-//                             ],
-//                           ),
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//             ],
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   Future<void> _react(BuildContext context) async {
-//     final user = context.read<AuthController>().user;
-//     if (user == null) return;
-//     await PostApi(ApiClient.instance).reaction({
-//       'postId': widget.post['_id'],
-//       'email': user.email,
-//     }, user.token);
-//     widget.onChanged?.call();
-//   }
-
-//   Future<void> _comment(BuildContext context) async {
-//     final user = context.read<AuthController>().user;
-//     if (user == null || comment.text.trim().isEmpty) return;
-//     setState(() => busy = true);
-//     await PostApi(ApiClient.instance).comment({
-//       'postId': widget.post['_id'],
-//       'comments': comment.text.trim().replaceAll('\n', r'\n'),
-//       'email': user.email,
-//       'name': user.name,
-//       'photo': user.photo,
-//     }, user.token);
-//     comment.clear();
-//     setState(() => busy = false);
-//     widget.onChanged?.call();
-//   }
-
-//   Future<void> _delete(BuildContext context) async {
-//     final user = context.read<AuthController>().user;
-//     if (user == null) return;
-//     final yes = await showDialog<bool>(
-//       context: context,
-//       builder: (_) => AlertDialog(
-//         title: const Text('আপনি কি নিশ্চিত?'),
-//         content: const Text('এই পোস্টটি মুছে ফেলতে চান?'),
-//         actions: [
-//           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('না')),
-//           FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('হ্যাঁ')),
-//         ],
-//       ),
-//     );
-//     if (yes != true) return;
-//     await PostApi(ApiClient.instance).deletePost('${widget.post['_id']}', user.token);
-//     widget.onChanged?.call();
-//   }
-// }
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rbc_flutter_professional/core/services/api_client.dart';
@@ -292,19 +79,29 @@ class _PostCardState extends State<PostCard> {
     final liked = currentLikes.contains(user?.email);
     final text = '${post['post'] ?? ''}'.replaceAll(r'\n', '\n');
 
+    // Facebook Style Text Logic
+    final isLongText = text.length > 150 || '\n'.allMatches(text).length > 3;
+    final displayText = (isLongText && !expanded)
+        ? '${text.substring(0, 150).trim()}...'
+        : text;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 12),
       child: ProCard(
+        // ProCard এর ভেতরে ডিফল্ট প্যাডিং থাকলে তা রিমুভ করে নিজের মতো সাজাতে পারেন, 
+        // আপাতত স্ট্যান্ডার্ড গ্যাপ রাখা হলো।
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- HEADER (Profile Info) ---
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 AppNetworkAvatar(
                   url: '${post['creatorImage'] ?? ''}',
-                  size: 42,
+                  size: 44,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,15 +110,27 @@ class _PostCardState extends State<PostCard> {
                         '${post['creatorName'] ?? ''}',
                         style: const TextStyle(
                           color: RbcColors.primary,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
-                        DateFormatter.bdt(post['date']),
-                        style: TextStyle(
-                          color: RbcColors.primary.withOpacity(.6),
-                          fontSize: 12,
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            DateFormatter.bdt(post['date']),
+                            style: TextStyle(
+                              color: RbcColors.primary.withOpacity(.6),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.public,
+                            size: 12,
+                            color: RbcColors.primary.withOpacity(.6),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -329,9 +138,9 @@ class _PostCardState extends State<PostCard> {
                 if (widget.canDelete)
                   IconButton(
                     onPressed: busy ? null : () => _delete(context),
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: RbcColors.primary,
+                    icon: Icon(
+                      Icons.more_horiz_rounded, // Facebook style 3-dots
+                      color: RbcColors.primary.withOpacity(.7),
                     ),
                   ),
               ],
@@ -339,146 +148,267 @@ class _PostCardState extends State<PostCard> {
 
             const SizedBox(height: 12),
 
-            Text(
-              text,
-              maxLines: expanded ? null : 3,
-              overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-              textAlign: TextAlign.justify,
-              style: TextStyle(
-                color: RbcColors.primary.withOpacity(.9),
-                height: 1.45,
+            // --- POST CAPTION ---
+            if (text.isNotEmpty) ...[
+              Text(
+                displayText,
+                textAlign: TextAlign.start,
+                style: const TextStyle(
+                  color: RbcColors.primary,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
               ),
-            ),
-
-            if (text.length > 120)
-              TextButton(
-                onPressed: () => setState(() => expanded = !expanded),
-                child: Text(expanded ? 'আবার কমিয়ে পড়ুন' : 'আরও পড়ুন'),
-              ),
-
-            if ('${post['image'] ?? ''}'.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              AppNetworkImage(
-                url: '${post['image']}',
-                height: 220,
-                width: double.infinity,
-                radius: 20,
-              ),
+              if (isLongText)
+                GestureDetector(
+                  onTap: () => setState(() => expanded = !expanded),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      expanded ? 'সংক্ষিপ্ত করুন' : 'আরও পড়ুন',
+                      style: TextStyle(
+                        color: RbcColors.primary.withOpacity(.6),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 12),
             ],
 
-            const SizedBox(height: 12),
+            // --- POST IMAGE ---
+            if ('${post['image'] ?? ''}'.isNotEmpty) ...[
+              AppNetworkImage(
+                url: '${post['image']}',
+                height: 250, // একটু বড় করা হয়েছে প্রফেশনাল লুকের জন্য
+                width: double.infinity,
+                radius: 8, // Facebook এর ছবিগুলো সাধারণত চারকোনা বা সামান্য রাউন্ড হয়
+              ),
+              const SizedBox(height: 12),
+            ],
 
-            Row(
-              children: [
-                IconButton(
-                  onPressed: busy ? null : () => _react(context),
-                  icon: Icon(
-                    liked
-                        ? Icons.thumb_up_alt_rounded
-                        : Icons.thumb_up_alt_outlined,
-                    color: liked ? RbcColors.accent : RbcColors.primary,
+            // --- LIKES & COMMENTS COUNTER ---
+            if (currentLikes.isNotEmpty || currentComments.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (currentLikes.isNotEmpty)
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: RbcColors.accent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.thumb_up_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${currentLikes.length}',
+                          style: TextStyle(
+                            color: RbcColors.primary.withOpacity(.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  if (currentComments.isNotEmpty)
+                    Text(
+                      '${currentComments.length} কমেন্ট',
+                      style: TextStyle(
+                        color: RbcColors.primary.withOpacity(.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Divider(height: 1, color: RbcColors.primary.withOpacity(.1)),
+            ],
+
+            // --- ACTION BUTTONS (LIKE / COMMENT) ---
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: busy ? null : () => _react(context),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              liked
+                                  ? Icons.thumb_up_alt_rounded
+                                  : Icons.thumb_up_alt_outlined,
+                              color: liked ? RbcColors.accent : RbcColors.primary.withOpacity(.7),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'লাইক',
+                              style: TextStyle(
+                                color: liked ? RbcColors.accent : RbcColors.primary.withOpacity(.7),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                Text(
-                  '${currentLikes.length} লাইক',
-                  style: const TextStyle(color: RbcColors.primary),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => setState(() => showComment = !showComment),
-                  icon: const Icon(
-                    Icons.mode_comment_outlined,
-                    color: RbcColors.primary,
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => showComment = !showComment),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.mode_comment_outlined,
+                              color: RbcColors.primary.withOpacity(.7),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'কমেন্ট',
+                              style: TextStyle(
+                                color: RbcColors.primary.withOpacity(.7),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                Text(
-                  '${currentComments.length} কমেন্ট',
-                  style: const TextStyle(color: RbcColors.primary),
-                ),
-              ],
+                ],
+              ),
             ),
 
+            if (currentLikes.isNotEmpty || currentComments.isNotEmpty)
+              Divider(height: 1, color: RbcColors.primary.withOpacity(.1)),
+
+            // --- COMMENTS SECTION ---
             if (showComment) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              for (final c in currentComments.take(5))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppNetworkAvatar(
+                        url: '${c['photo'] ?? ''}',
+                        size: 34,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: RbcColors.primary.withOpacity(.06),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${c['name'] ?? ''}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${c['comments'] ?? ''}'.replaceAll(
+                                      r'\n',
+                                      '\n',
+                                    ),
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Comment Input Field
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppNetworkAvatar(
                     url: user?.photo ?? '',
-                    size: 34,
+                    size: 36,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: comment,
                       minLines: 1,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        hintText: 'আপনার মন্তব্য লিখুন',
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'আপনার মন্তব্য লিখুন...',
+                        hintStyle: TextStyle(fontSize: 14, color: RbcColors.primary.withOpacity(.5)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        filled: true,
+                        fillColor: RbcColors.primary.withOpacity(.05),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                   ),
-                  IconButton.filled(
+                  const SizedBox(width: 8),
+                  IconButton(
                     style: IconButton.styleFrom(
-                      backgroundColor: RbcColors.primary,
+                      backgroundColor: RbcColors.primary.withOpacity(.05),
                     ),
                     onPressed: busy ? null : () => _comment(context),
                     icon: const Icon(
                       Icons.send_rounded,
-                      color: RbcColors.surface,
+                      color: RbcColors.primary,
+                      size: 20,
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 10),
-
-              for (final c in currentComments.take(5))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppNetworkAvatar(
-                        url: '${c['photo'] ?? ''}',
-                        size: 30,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: RbcColors.primary.withOpacity(.06),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${c['name'] ?? ''}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              Text(
-                                '${c['comments'] ?? ''}'.replaceAll(
-                                  r'\n',
-                                  '\n',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ],
         ),
       ),
     );
   }
+
+  // --- API Functions (_react, _comment, _delete) remain unchanged ---
+  // (আপনার আগের কোডের ফাংশনগুলো হুবহু এখানে থাকবে)
 
   Future<void> _react(BuildContext context) async {
     final user = context.read<AuthController>().user;
@@ -493,7 +423,6 @@ class _PostCardState extends State<PostCard> {
       newLikes.add(user.email);
     }
 
-    // সঙ্গে সঙ্গে UI update
     setState(() {
       post['likes'] = newLikes;
       busy = true;
@@ -507,17 +436,12 @@ class _PostCardState extends State<PostCard> {
 
       widget.onChanged?.call();
     } catch (e) {
-      // Error হলে আগের অবস্থায় ফিরিয়ে দিবে
       if (!mounted) return;
-
       setState(() {
         post['likes'] = oldLikes;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ApiClient.messageFrom(e)),
-        ),
+        SnackBar(content: Text(ApiClient.messageFrom(e))),
       );
     } finally {
       if (mounted) {
@@ -548,7 +472,6 @@ class _PostCardState extends State<PostCard> {
 
     comment.clear();
 
-    // সঙ্গে সঙ্গে UI update
     setState(() {
       post['comments'] = newComments;
       busy = true;
@@ -567,15 +490,11 @@ class _PostCardState extends State<PostCard> {
       widget.onChanged?.call();
     } catch (e) {
       if (!mounted) return;
-
       setState(() {
         post['comments'] = oldComments;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ApiClient.messageFrom(e)),
-        ),
+        SnackBar(content: Text(ApiClient.messageFrom(e))),
       );
     } finally {
       if (mounted) {
@@ -618,7 +537,6 @@ class _PostCardState extends State<PostCard> {
 
       if (!mounted) return;
 
-      // delete করার পর সঙ্গে সঙ্গে card hide হবে
       setState(() {
         deleted = true;
       });
@@ -626,11 +544,8 @@ class _PostCardState extends State<PostCard> {
       widget.onChanged?.call();
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ApiClient.messageFrom(e)),
-        ),
+        SnackBar(content: Text(ApiClient.messageFrom(e))),
       );
     } finally {
       if (mounted && !deleted) {
