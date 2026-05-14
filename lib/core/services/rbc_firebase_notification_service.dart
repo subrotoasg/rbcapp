@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:rbc_flutter_professional/core/services/app_action_service.dart';
 import 'package:rbc_flutter_professional/firebase_options.dart';
+import 'package:rbc_flutter_professional/features/chat/live_chat_bottom_sheet.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -264,6 +265,16 @@ class RbcFirebaseNotificationService {
     ]);
 
     debugPrint('📲 FCM NAVIGATION: deepLink=$deepLink screen=$screen id=$id');
+
+    if (deepLink == 'rbc://chat' || screen == 'chat') {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const LiveChatBottomSheet(),
+      );
+      return;
+    }
 
     if (deepLink.isNotEmpty) {
       AppActionService.openInsideApp(

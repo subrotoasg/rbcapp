@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rbc_flutter_professional/features/auth/auth_controller.dart';
 import 'package:rbc_flutter_professional/features/chat/widgets/message_bubble.dart';
+import 'package:rbc_flutter_professional/core/services/api_client.dart';
 
 class LiveChatBottomSheet extends StatefulWidget {
 const LiveChatBottomSheet({super.key});
@@ -34,6 +35,21 @@ State<LiveChatBottomSheet> createState() => _LiveChatBottomSheetState();
         'senderPhoto': user.photo ?? '',
         'timestamp': FieldValue.serverTimestamp(),
         });
+        try {
+        await ApiClient.instance.post(
+        '/api/v1/chat/notification',
+        data: {
+        'title': 'লাইভ আড্ডা',
+        'message': text,
+        'senderId': user.email ?? '',
+        'senderName': user.name ?? 'Unknown',
+        'deepLink': 'rbc://chat',
+        },
+        );
+        } catch (apiError) {
+        debugPrint('❌ নোটিফিকেশন পাঠাতে সমস্যা: $apiError');
+        }
+
         } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error sending message!')));
