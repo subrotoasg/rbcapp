@@ -10,6 +10,7 @@ import 'package:rbc_flutter_professional/features/posts/posts_screen.dart';
 import 'package:rbc_flutter_professional/features/profile/profile_screen.dart';
 import 'package:rbc_flutter_professional/features/services/services_hub_screen.dart';
 import 'package:rbc_flutter_professional/features/shell/app_drawer.dart';
+import 'package:rbc_flutter_professional/features/home/home_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});

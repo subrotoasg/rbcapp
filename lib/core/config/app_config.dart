@@ -9,6 +9,7 @@ class AppConfig {
   static const String facebookGroup = 'https://www.facebook.com/groups/rbc2015';
   static const String mobileNumber = '0963 9154759';
   static const String email = 'info@rbcweb.site';
+  static const String whatsAppGroupLink = 'https://chat.whatsapp.com/IyUAlyoGShl7AJMyxDY6Ev';
   static const String youtubeUrl = 'https://www.youtube.com/@INDIANCULTUREKIRTAN';
   static const String bangladeshSportsUrl = 'https://www.google.com/search?q=Bangladesh+cricket+live+score';
   static const String googleMeetUrl = 'https://meet.google.com/';
