@@ -33,7 +33,7 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
   String? _fatherId;
   String? _motherId;
 
-  final List<String> _genders = ['ছেলে', 'মেয়ে'];
+  final List<String> _genders = ['Male', 'Female'];
   final List<String> _bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
   @override

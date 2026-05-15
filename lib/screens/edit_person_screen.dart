@@ -160,8 +160,8 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
                     child: DropdownButtonFormField<String>(
                       value: _selectedGender,
                       items: const [
-                        DropdownMenuItem(value: 'Male', child: Text('ছেলে')),
-                        DropdownMenuItem(value: 'Female', child: Text('মেয়ে')),
+                        DropdownMenuItem(value: 'Male', child: Text('Male')),
+                        DropdownMenuItem(value: 'Female', child: Text('Female')),
                       ],
                       onChanged: (v) => setState(() => _selectedGender = v),
                       decoration: _dec("লিঙ্গ", Icons.people),
