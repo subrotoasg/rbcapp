@@ -25,6 +25,10 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final user = auth.user;
+    String firstLetter = 'R';
+    if (user?.name != null && user!.name!.isNotEmpty) {
+      firstLetter = user.name![0].toUpperCase();
+    }
     return Drawer(
       backgroundColor: RbcColors.surface,
       child: SafeArea(
@@ -40,7 +44,28 @@ class AppDrawer extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  AppNetworkAvatar(url: user?.photo ?? '', size: 76),
+                  if (user?.photo != null && user!.photo!.isNotEmpty)
+                    AppNetworkAvatar(url: user.photo!, size: 76)
+                  else
+                    Container(
+                      height: 76,
+                      width: 76,
+                      decoration: const BoxDecoration(
+                        color: RbcColors.surface,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          firstLetter,
+                          style: const TextStyle(
+                            color: RbcColors.primary,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // AppNetworkAvatar(url: user?.photo ?? '', size: 76),
                   const SizedBox(height: 12),
                   Text(
                     user?.name ?? 'RBC User',

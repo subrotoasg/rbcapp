@@ -13,6 +13,7 @@ import 'package:rbc_flutter_professional/features/services/panchika_screen.dart'
 import 'package:rbc_flutter_professional/features/services/sports_media_screen.dart';
 import 'package:rbc_flutter_professional/features/services/village_services_screen.dart';
 import 'package:rbc_flutter_professional/shared/widgets/pro_card.dart';
+import 'package:rbc_flutter_professional/screens/village_people_list_screen.dart';
 
 class ServicesHubScreen extends StatelessWidget {
   const ServicesHubScreen({super.key});
@@ -21,6 +22,7 @@ class ServicesHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _HubItem('ক্লাব পরিচিতি', 'ক্লাবের লক্ষ্য ও কার্যক্রম', Icons.info_rounded, const AboutRbcScreen()),
+      _HubItem('গ্রাম সদস্য', 'গ্রামের বংশতালিকা ও তথ্য', Icons.family_restroom_rounded, const VillagePeopleListScreen()),
       _HubItem('আয় হিসাব', 'ক্লাবের আয় তালিকা', Icons.payments_rounded, const EarnListScreen()),
       _HubItem('ব্যয় হিসাব', 'ব্যয়ের তালিকা', Icons.receipt_long_rounded, const SpendListScreen()),
       _HubItem('মাসিক চাঁদা', 'সদস্য চাঁদা', Icons.account_balance_wallet_rounded, const MonthCadaScreen()),
